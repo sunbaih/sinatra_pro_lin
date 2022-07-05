@@ -9,35 +9,54 @@ import argparse, os
 parser = argparse.ArgumentParser(description='SINATRA Pro')
 args = parser.parse_args()
 
-protA = "wt_fit"
-protB = "ser_fit"
-n_sample = 500
-i_sample = 500
-sm_radius = 6.0 #r
+protA = "wt_one_frm"
+protB = "ser_one_frm"
+n_sample = 100
+i_sample = 100
+sm_radius = 1.0 #r
 n_cone = 20 #c
 n_direction_per_cone = 8 #d
 cap_radius = 0.8 #theta
 n_filtration = 120 #l
 ec_type = "DECT"
 verbose = True
-func = "linear"
+func = "probit"
 parallel = True
-label_type = "continuous"
+label_type = "binomial"
 from_pdb= False
-selection = "protein and resid 65:213"
+selection = "protein"
 by_frame = False
+
 
 #for running on personal computer
 """
 pdbpathA = '/Users/baihesun/Desktop/sp/sinatra_pro_lin_ser'
-pdbpathB = '/Users/baihesun/Desktop/sp/sinatra_pro_lin_wt'
+pdbpathB = '/Users/baihesun/Desktop/sp/perturbed'
 directory = '/Users/baihesun/Desktop/sp/sinatra_pro_lin_out'
 datapathA = '/Users/baihesun/Desktop/sp/sinatra_pro_lin_data_ser'
 datapathB = '/Users/baihesun/Desktop/sp/sinatra_pro_lin_data_wt'
+
+struct_file_A = '/Users/baihesun/Desktop/sp/sinatra_pro_lin_wt/wt_fit.pdb'
+traj_file_A = struct_file_A
+struct_file_B = '/Users/baihesun/Desktop/sp/sinatra_pro_perturbed/perturbed.pdb'
+traj_file_B = struct_file_B
 """
 
 #for running on oscar
 #""""
+pdbpathA = '/users/bsun14/sp/wt_one_frame'
+pdbpathB = '/users/bsun14/sp/ser_one_frame'
+directory = '/users/bsun14/sp/sinatra_pro_lin_out'
+datapathA = '/users/bsun14/sp/sinatra_pro_lin_data_wt'
+datapathB = '/users/bsun14/sp/perturbed_one_frame'
+
+struct_file_A = '/users/bsun14/sp/wt_one_frame/wt_one_frame.pdb'
+traj_file_A = struct_file_A
+struct_file_B = '/users/bsun14/sp/ser_one_frame/ser_one_frame.pdb'
+traj_file_B = struct_file_B
+#"""
+
+""""
 pdbpathA = '/users/bsun14/sp/sinatra_pro_lin_wt'
 pdbpathB = '/users/bsun14/sp/sinatra_pro_lin_ser'
 directory = '/users/bsun14/sp/sinatra_pro_lin_out'
@@ -48,9 +67,7 @@ struct_file_A = '/users/bsun14/sp/sinatra_pro_lin_wt/wt_fit.pdb'
 traj_file_A = struct_file_A
 struct_file_B = '/users/bsun14/sp/sinatra_pro_lin_ser/ser_fit.pdb'
 traj_file_B = struct_file_B
-#"""
-
-directory = '/users/bsun14/sp/sinatra_pro_lin_out'
+"""
 
 """"
 #original data
@@ -125,13 +142,6 @@ kld, rates, delta, eff_samp_size = calc_rate(X,y, func= func, bandwidth= 0.01, n
                                              n_core=-1, verbose=verbose)
 
 np.savetxt("%s/rate_%s_%s_%s_%.1f_%d_%d_%.2f_%d.txt"%(directory,ec_type,protA,protB,sm_radius,n_cone,n_direction_per_cone,cap_radius,n_filtration),rates)
-
-vert_prob = reconstruct_on_multiple_mesh(protA,protB,directions, rates=rates, not_vacuum=not_vacuum, n_sample=n_sample,
-                                         n_direction_per_cone=n_direction_per_cone, n_filtration=n_filtration, sm_radius=sm_radius,
-                                         directory_mesh="%s/msh/%s_%.1f"%(directory,protA,sm_radius), parallel= True,
-                                         n_core=-1, verbose=verbose)
-
-np.savetxt("%s/rate_atom_%s_%s_%s_%.1f_%d_%d_%.2f_%d.txt"%(directory,ec_type,protA,protB,sm_radius,n_cone,n_direction_per_cone,cap_radius,n_filtration),vert_prob)
 
 vert_prob = reconstruct_on_multiple_mesh(protA,protB,directions, rates=rates, not_vacuum=not_vacuum, n_sample=n_sample,
                                          n_direction_per_cone=n_direction_per_cone, n_filtration=n_filtration,

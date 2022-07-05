@@ -103,7 +103,7 @@ def read_cont_labels(directory_data_A, directory_data_B, n_sample):
     return(label)
 
 def compute_ec_curve_folder(label_type, directory_data_A, directory_data_B, protA="protA", protB="protB",
-                            directions=None, n_sample= 3, ec_type="ECT", n_filtration=25,
+                            directions=None, n_sample= 100, ec_type="ECT", n_filtration=25,
                             ball_radius=1.0, include_faces=True, directory_mesh_A=None, directory_mesh_B=None,
                             sm_radius=4.0, hemisphere=False, parallel=False, n_core=-1, verbose=True):
     """
@@ -217,9 +217,25 @@ def compute_ec_curve_folder(label_type, directory_data_A, directory_data_B, prot
         label[:n_A].fill(0)
         label[n_A:].fill(1)
 
-    if label_type == "continuous":
+    if label_type == "__continuous":
         label = read_cont_labels(directory_data_A, directory_data_B, n_sample)
         label = (label - np.mean(label)) / np.std(label)
+
+    if label_type == "continuous":
+        n_A = data_A.shape[0]
+        n_B = data_B.shape[0]
+        label = np.zeros(n_A + n_B, dtype=float)
+        label[:n_A].fill(0)
+
+        for i in range(n_sample):
+            y = i*0.1
+            label[n_A+i] = y
+            print("i:", i, y)
+            print("label[n_A+i]:", label[n_A+i])
+
+
+
+    print(label)
 
     return data, label, not_vacuum
 

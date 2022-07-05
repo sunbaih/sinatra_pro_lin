@@ -9,6 +9,13 @@ from MDAnalysis.core.groups import AtomGroup
 #from sinatra_pro.mesh import *
 from mesh import *
 
+def perturb(protA, struct_file_A, selection):
+    u_A = mda.Universe(struct_file_A).select_atoms(selection)
+    positions = np.array(u_A.positions)
+
+
+
+
 
 def convert_traj_pdb_aligned(protA, protB, struct_file_A, traj_file_A, struct_file_B, traj_file_B, align_frame=0,
                              n_sample=100, selection=None, directory=None, offset=0, align_sequence=False, single=False,
