@@ -9,10 +9,9 @@ import argparse, os
 parser = argparse.ArgumentParser(description='SINATRA Pro')
 args = parser.parse_args()
 
-protA = "wt_one_frm"
-protB = "ser_one_frm"
+protA = "wt_fit"
+protB = "perturbed"
 n_sample = 100
-i_sample = 100
 sm_radius = 1.0 #r
 n_cone = 20 #c
 n_direction_per_cone = 8 #d
@@ -20,9 +19,9 @@ cap_radius = 0.8 #theta
 n_filtration = 120 #l
 ec_type = "DECT"
 verbose = True
-func = "probit"
+func = "linear"
 parallel = True
-label_type = "binomial"
+label_type = "continuous"
 from_pdb= False
 selection = "protein"
 by_frame = False
@@ -32,7 +31,7 @@ by_frame = False
 """
 pdbpathA = '/Users/baihesun/Desktop/sp/sinatra_pro_lin_ser'
 pdbpathB = '/Users/baihesun/Desktop/sp/perturbed'
-directory = '/Users/baihesun/Desktop/sp/sinatra_pro_lin_out'
+directory = '/Users/baihesun/Desktop/sp/trial_1'
 datapathA = '/Users/baihesun/Desktop/sp/sinatra_pro_lin_data_ser'
 datapathB = '/Users/baihesun/Desktop/sp/sinatra_pro_lin_data_wt'
 
@@ -44,15 +43,15 @@ traj_file_B = struct_file_B
 
 #for running on oscar
 #""""
-pdbpathA = '/users/bsun14/sp/wt_one_frame'
-pdbpathB = '/users/bsun14/sp/ser_one_frame'
-directory = '/users/bsun14/sp/sinatra_pro_lin_out'
+pdbpathA = '/users/bsun14/sp/sinatra_pro_lin_wt'
+pdbpathB = '/users/bsun14/sp/sinatra_pro_perturbed'
+directory = '/users/bsun14/sp/trial_1'
 datapathA = '/users/bsun14/sp/sinatra_pro_lin_data_wt'
-datapathB = '/users/bsun14/sp/perturbed_one_frame'
+datapathB = '/users/bsun14/sp/sinatra_pro_lin_data_ser'
 
-struct_file_A = '/users/bsun14/sp/wt_one_frame/wt_one_frame.pdb'
+struct_file_A = '/users/bsun14/sp/sinatra_pro_lin_wt/wt_fit.pdb'
 traj_file_A = struct_file_A
-struct_file_B = '/users/bsun14/sp/ser_one_frame/ser_one_frame.pdb'
+struct_file_B = '/users/bsun14/sp/sinatra_pro_perturbed/perturbed.pdb'
 traj_file_B = struct_file_B
 #"""
 
@@ -117,9 +116,15 @@ directory_data_B = datapathB
 
 #_pdb_file = "%s/%s.pdb" % (directory_pdb_A, protA)
 
-convert_pdb_mesh(n_sample= n_sample, by_frame = by_frame ,protA = protA, protB = protB ,sm_radius=sm_radius, directory_pdb_A=directory_pdb_A,
-                 directory_pdb_B=directory_pdb_B, directory_mesh="%s/msh/"%(directory), parallel=False, n_core=-1,
-                verbose=True)
+convert_pdb_mesh(protA,protB,
+        n_sample=n_sample,
+        sm_radius=sm_radius,
+        directory_pdb_A=directory_pdb_A,
+        directory_pdb_B=directory_pdb_B,
+        directory_mesh="%s/msh/"%(directory),
+        parallel=parallel,
+        n_core=-1,
+        verbose=verbose)
 
 directions = generate_equidistributed_cones(n_cone=n_cone, n_direction_per_cone=n_direction_per_cone,
                                             cap_radius= cap_radius, hemisphere=False)
@@ -140,6 +145,9 @@ np.savetxt('%s/%s_%s_label_all.txt'%(directory,protA,protB),y)
 
 kld, rates, delta, eff_samp_size = calc_rate(X,y, func= func, bandwidth= 0.01, n_mcmc= 100000,low_rank=True, parallel=parallel,
                                              n_core=-1, verbose=verbose)
+
+#CHANGE BELOW
+rates = np.absolute(rates)
 
 np.savetxt("%s/rate_%s_%s_%s_%.1f_%d_%d_%.2f_%d.txt"%(directory,ec_type,protA,protB,sm_radius,n_cone,n_direction_per_cone,cap_radius,n_filtration),rates)
 

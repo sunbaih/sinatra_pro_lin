@@ -17,8 +17,8 @@ def perturb(protA, struct_file_A, selection):
 
 
 
-def convert_traj_pdb_aligned(protA, protB, struct_file_A, traj_file_A, struct_file_B, traj_file_B, align_frame=0,
-                             n_sample=100, selection=None, directory=None, offset=0, align_sequence=False, single=False,
+def convert_traj_pdb_aligned(protA, protB, struct_file_A, traj_file_A, struct_file_B, traj_file_B, align_frame,
+                             n_sample, selection=None, directory=None, offset=0, align_sequence=False, single=False,
                              verbose=False):
     """
     Convert MD simulation trajectory to aligned protein structures in PDB format
@@ -159,8 +159,8 @@ def calc_radius_pdb(selection='protein', directory=None, prot=None, i_sample=Non
     return meshA.calc_radius()
 
 
-def convert_pdb_mesh_single_not_by_frame(sm_radius, rmax, directory=None, prot=None, i_sample=None, directory_mesh=None,
-                                directory_pdb=None, filename=None, selection='protein', verbose=True):
+def convert_pdb_mesh_single(sm_radius, rmax, directory=None, prot=None, i_sample=None, directory_mesh=None,
+                            directory_pdb=None, filename=None, selection='protein', verbose=False):
     """Convert PDB structure to mesh by simplical construction."""
     if directory != None and prot != None and i_sample != None and directory_mesh != None:
         pdb_file = '%s/pdb/%s/%s_frame%d.pdb' % (directory, prot, prot, i_sample)
@@ -174,56 +174,15 @@ def convert_pdb_mesh_single_not_by_frame(sm_radius, rmax, directory=None, prot=N
         if verbose:
             sys.stdout.write('Constructing topology for %s for %s...\r' % (prot, filename))
             sys.stdout.flush()
-
     u = mda.Universe(pdb_file)
-    meshA = mesh()
     protein = u.select_atoms(selection)
     meshA = mesh()
     meshA.vertices = protein.positions
     meshA.convert_vertices_to_mesh(sm_radius=sm_radius, msh_file=msh_file, rmax=rmax)
     return
 
-def convert_pdb_mesh_single_by_frame(sm_radius, rmax, i_sample, directory=None, prot=None,
-                            directory_mesh=None, directory_pdb=None, filename=None, selection='protein', verbose=True):
-    pdb_file = directory_pdb + '/' + prot + '.pdb'
-    msh_file = '%s/%s_frame%d.msh' % (directory_mesh, prot, i_sample)
-    u = mda.Universe(pdb_file)
-    meshA = mesh()
-    positions = []
-    frame = int(i_sample)  # the frame you want
-    protein = u.select_atoms(selection)
-    u.trajectory[frame]
-    for atom in protein:
-        positions.append(atom.position)
-    meshA.vertices = np.array(positions)
-    meshA.convert_vertices_to_mesh(sm_radius=sm_radius, msh_file=msh_file, rmax=rmax)
-    print("constructed mesh for frame", i_sample, prot)
-    return
 
-def convert_pdb_mesh_single(by_frame, sm_radius, rmax, i_sample, directory=None, prot=None,
-                            directory_mesh=None,
-                            directory_pdb=None, filename=None, selection='protein', verbose=True):
-    """
-    If the pdb file contains the trajectory of the protein over multiple frames and you want to create a mesh
-    for each frame within the pdb file, set by_frame = True.
-
-    If you have multiple pdb files, and the pdb file only contains data for one frame, set by_frame = False.
-
-    If you only have one pdb file and want to create one mesh, set by_frame = False.
-    """
-
-    if by_frame == False:
-        convert_pdb_mesh_single_not_by_frame(sm_radius=sm_radius, rmax=rmax, i_sample=i_sample, directory_pdb= directory_pdb,
-                                filename=filename, directory_mesh=directory_mesh, prot=prot,
-                                selection='protein', verbose=verbose)
-    if by_frame == True:
-        for i in range(i_sample):
-            convert_pdb_mesh_single_by_frame(sm_radius=sm_radius, rmax=rmax, i_sample=i, directory_pdb= directory_pdb,
-                                filename=filename, directory_mesh=directory_mesh, prot=prot,
-                                selection='protein', verbose=verbose)
-    return
-
-def convert_pdb_mesh(n_sample, by_frame =True, protA="protA", protB="protB", sm_radius=4.0, directory_pdb_A=None,
+def convert_pdb_mesh(protA="protA", protB="protB", n_sample=101, sm_radius=4.0, directory_pdb_A=None,
                      directory_pdb_B=None, directory_mesh=None, parallel=False, n_core=-1, verbose=False):
     """
     Convert the aligned protein structures in PDB format (e.g. from "convert_traj_pdb_aligned") to simplicial meshes
@@ -288,7 +247,7 @@ def convert_pdb_mesh(n_sample, by_frame =True, protA="protA", protB="protB", sm_
                     r_prots.append(r_prot)
                 r = np.append(r, r_prots)
             if len(r_prots) == 0:
-                print("Folder %s is empty or contain no PDB files!" % directory_pdb)
+                print("Folder %s is emply or contain no PDB files!" % directory_pdb)
                 exit()
 
     rmax = np.amax(r)
@@ -302,12 +261,14 @@ def convert_pdb_mesh(n_sample, by_frame =True, protA="protA", protB="protB", sm_
                 os.mkdir(directory_mesh)
             if parallel:
                 tmp = Parallel(n_jobs=n_core)(
-                    delayed(convert_pdb_mesh_single)(by_frame,sm_radius=sm_radius, rmax=rmax, directory=directory, prot=prot,
-                                                     i_sample=n_sample, directory_mesh=directory_mesh,
-                                                     selection='protein', verbose=verbose))
+                    delayed(convert_pdb_mesh_single)(sm_radius=sm_radius, rmax=rmax, directory=directory, prot=prot,
+                                                     i_sample=i_sample, directory_mesh=directory_mesh,
+                                                     selection='protein', verbose=verbose) for i_sample in
+                    range(n_sample))
             else:
-                convert_pdb_mesh_single(by_frame, sm_radius=sm_radius, rmax=rmax, directory=directory, prot=prot,
-                                            i_sample=n_sample, directory_mesh=directory_mesh, selection='protein',
+                for i_sample in range(n_sample):
+                    convert_pdb_mesh_single(sm_radius=sm_radius, rmax=rmax, directory=directory, prot=prot,
+                                            i_sample=i_sample, directory_mesh=directory_mesh, selection='protein',
                                             verbose=verbose)
     else:
         for prot, directory_pdb in zip([protA, protB], [directory_pdb_A, directory_pdb_B]):
@@ -316,19 +277,16 @@ def convert_pdb_mesh(n_sample, by_frame =True, protA="protA", protB="protB", sm_
                 os.mkdir(directory_mesh_prot)
             if parallel:
                 tmp = Parallel(n_jobs=n_core)(
-                    delayed(convert_pdb_mesh_single)(by_frame,sm_radius=sm_radius, rmax=rmax, i_sample=n_sample,
-                                                         directory_pdb=directory_pdb,
-                                                         filename=filename, directory_mesh=directory_mesh_prot,
-                                                         prot=prot,
-                                                         selection='protein', verbose=verbose) for filename in
+                    delayed(convert_pdb_mesh_single)(sm_radius=sm_radius, rmax=rmax, directory_pdb=directory_pdb,
+                                                     filename=filename, directory_mesh=directory_mesh_prot, prot=prot,
+                                                     selection='protein', verbose=verbose) for filename in
                     os.listdir(directory_pdb))
             else:
                 for filename in os.listdir(directory_pdb):
-                    convert_pdb_mesh_single(by_frame,sm_radius=sm_radius, rmax=rmax, i_sample=n_sample, directory_pdb=directory_pdb,
-                                                filename=filename, directory_mesh=directory_mesh_prot, prot=prot,
-                                                selection='protein', verbose=verbose)
+                    convert_pdb_mesh_single(sm_radius=sm_radius, rmax=rmax, directory_pdb=directory_pdb,
+                                            filename=filename, directory_mesh=directory_mesh_prot, prot=prot,
+                                            selection='protein', verbose=verbose)
     if verbose:
         sys.stdout.write('\n')
 
     return
-
